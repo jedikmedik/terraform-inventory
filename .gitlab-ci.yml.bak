@@ -1,0 +1,48 @@
+---
+stages:
+  - init
+  - refresh
+  - plan
+  - apply
+
+.common:
+  tags:
+    - tf
+
+INIT:
+  artifacts:
+    paths:
+      - .terraform
+  extends: .common
+  script:
+    - terraform init
+  stage: init
+
+REFRESH:
+  artifacts:
+    paths:
+      - .terraform
+      - terraform.tfstate
+  extends: .common
+  script:
+    - terraform refresh -var-file=secret.tfvars
+  stage: refresh
+
+PLAN:
+  artifacts:
+    paths:
+      - .terraform
+      - planfile
+  extends: .common
+  script:
+    - terraform plan -var-file=secret.tfvars -out planfile
+  stage: plan
+
+APPLY:
+  extends: .common
+  script:
+    - terraform apply -auto-approve -input=false planfile
+    - terraform output -state=terraform.tfstate ansible_inventory > ~/hosts.ini
+  stage: apply
+  when: manual
+...
